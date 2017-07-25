@@ -157,7 +157,7 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
             // $(self.svg).empty();
             // $(self.drawing + ">div").remove();
             $(self.snap.node).find(".drupElem").remove();
-            $(self.snap.node).find("egal-pen").remove();
+            //$(self.snap.node).find("egal-pen").remove();
             self.selectionContext.selectElement(null);
             self.connectContext.clear();
             self.currentId = 0;
@@ -605,64 +605,64 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
         var widthBboxes = {};
         var heightBboxes = {};
 
-        ////addded AAB
-        var box;
+        // ////addded AAB
+        // var box;
                 
-        //set that will receive the selected items
-        var selections = drupyter.snap.group();
+        // //set that will receive the selected items
+        // //var selections = drupyter.snap.group();
 
-        //DRAG FUNCTIONS
-                //when mouse goes down over background, start drawing selection box
-                function dragstart (x, y, event) {
-                    box = drupyter.snap.rect(x, y, 0, 0).attr("stroke", "#9999FF");    
-                }
+        // //DRAG FUNCTIONS
+        //         //when mouse goes down over background, start drawing selection box
+        //         function dragstart (x, y, event) {
+        //             this.box = drupyter.snap.rect(x, y, 0, 0).attr("stroke", "#9999FF");    
+        //         }
                 
-                //when mouse moves during drag, adjust box. If to left or above original point, you have to translate the whole box and invert the dx or dy values since .rect() doesn't take negative width or height
-                function dragmove (dx, dy, x, y, event) {
-                    var xoffset = 0,
-                        yoffset = 0;
+        //         //when mouse moves during drag, adjust box. If to left or above original point, you have to translate the whole box and invert the dx or dy values since .rect() doesn't take negative width or height
+        //         function dragmove (dx, dy, x, y, event) {
+        //             var xoffset = 0,
+        //                 yoffset = 0;
                         
-                    if (dx < 0) {
-                        xoffset = dx;
-                        dx = -1 * dx;
-                    }
+        //             if (dx < 0) {
+        //                 xoffset = dx;
+        //                 dx = -1 * dx;
+        //             }
                     
-                    if (dy < 0) {
-                        yoffset = dy;
-                        dy = -1 * dy;
-                    }
+        //             if (dy < 0) {
+        //                 yoffset = dy;
+        //                 dy = -1 * dy;
+        //             }
                     
-                    box.transform("T" + xoffset + "," + yoffset);
-                    box.attr("width", dx);    
-                    box.attr("height", dy);  
-                    box.attr("fill", "none");  
-                }
+        //             this.box.transform("T" + xoffset + "," + yoffset);
+        //             this.box.attr("width", dx);    
+        //             this.box.attr("height", dy);  
+        //             this.box.attr("fill", "none");  
+        //         }
                 
                 
-                function dragend (event) {
-                    //get the bounds of the selections
-                    var bounds = box.getBBox();
-                    box.remove();
-                    reset();
+        //         function dragend (event) {
+        //             //get the bounds of the selections
+        //             var bounds = box.getBBox();
+        //             this.box.remove();
+        //             reset();
 
-                    var items = set.selectAll("*");
-                    items.forEach(function(el) {
-                        //here, we want to get the x,y vales of each object regardless of what sort of shape it is, but rect uses rx and ry, circle uses cx and cy, etc
-                        //so we'll see if the bounding boxes intercept instead
-                        var mybounds = el.getBBox();
+        //             var items = set.selectAll("*");
+        //             items.forEach(function(el) {
+        //                 //here, we want to get the x,y vales of each object regardless of what sort of shape it is, but rect uses rx and ry, circle uses cx and cy, etc
+        //                 //so we'll see if the bounding boxes intercept instead
+        //                 var mybounds = el.getBBox();
                         
-                        //do bounding boxes overlap?
-                        //is one of this object's x extremes between the selection's xextremes?
-                        if (Snap.path.isBBoxIntersect(mybounds, bounds)) {
-                            selections.append(el);
-                        }
-                    });
+        //                 //do bounding boxes overlap?
+        //                 //is one of this object's x extremes between the selection's xextremes?
+        //                 if (Snap.path.isBBoxIntersect(mybounds, bounds)) {
+        //                     //this.selections.append(el);
+        //                 }
+        //             });
 
-                    selections.attr("opacity", 0.5);
-                }
+        //             ///selections.attr("opacity", 0.5);
+        //         }
 
 
-        ////end added
+        // ////end added
 
         this.onSelect = function (listener) {
             listeners.push(listener)
@@ -1544,6 +1544,7 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
                 drupyter.registerAndDecorateElement(group);
                 drupyter.saveCurrentSVG();
                 line = null;
+                console.log("mousedown fn in pen called. line was true")
             } else {
                 this.pointslist = new Array();
                 var offset = $(element.node).offset();
@@ -1552,17 +1553,26 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
                 this.pointslist.push(x,y);
                 line = drupyter.snap.polyline(this.pointslist);
                 line.attr({
-                    fill: "#fff",
+                    fill: "none",
                     stroke: "#000",
                     strokeWidth: 1,
                     "vector-effect": "non-scaling-stroke"
                 });
                 line.addClass("core alignable sub egal-line");
+                var group = drupyter.snap.group(line);
+                drupyter.registerAndDecorateElement(group);
+                drupyter.saveCurrentSVG();
+                
+                console.log("mousedown fn in pen called. line was false.")
             }
         };
 
         this.onMouseUp = function(e,element){
             this.down=false;
+           // line=null;
+           
+
+            console.log("mouseup fn in pen called.")
         };
 
         this.onMouseMove = function (e, element) {
@@ -1574,18 +1584,23 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
                 var y = e.pageY - offset.top;
                 this.pointslist.push(x,y);
                 line = drupyter.snap.polyline(this.pointslist);
+                var group = drupyter.snap.group(line);
                 line.attr({
-                    fill: "#fff",
+                    fill: "none",
                     stroke: "#000",
                     strokeWidth: 1,
                     "vector-effect": "non-scaling-stroke"
                 });
+                line.addClass("core alignable sub egal-line");
+                drupyter.registerAndDecorateElement(group);
+                drupyter.saveCurrentSVG();
+                
             }
             }
         };
 
         this.onClickElement = function (e, element) {
-            // console.log("Selected in MakeCircle Mode");
+            //console.log("Selected in pen Mode");
         };
 
 
