@@ -79,6 +79,7 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
         // this.lineContext = new LineContext(this);
         this.connectContext = new ConnectContext(this);
         this.lineContext = new MakeLineContext(this);
+        this.penContext = new MakePenContext(this);
         this.currentContext = this.selectionContext;
 
         function linkContextButtonNew(selector, context, update) {
@@ -129,6 +130,8 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
         });
         linkContextButtonNew(self.container + " .makeLine", this.lineContext);
 
+        linkContextButtonNew(self.container + " .makePen", this.penContext);
+
         // $(self.container + " .toggle-visible").click(function() {
         //     $(self.container + " .toggle-visible i").toggleClass("fa-toggle-on");
         //     $(self.container + " .toggle-visible i").toggleClass("fa-toggle-off");
@@ -154,6 +157,7 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
             // $(self.svg).empty();
             // $(self.drawing + ">div").remove();
             $(self.snap.node).find(".drupElem").remove();
+            $(self.snap.node).find("egal-pen").remove();
             self.selectionContext.selectElement(null);
             self.connectContext.clear();
             self.currentId = 0;
@@ -600,6 +604,65 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
         var cyBboxes = {};
         var widthBboxes = {};
         var heightBboxes = {};
+
+        ////addded AAB
+        var box;
+                
+        //set that will receive the selected items
+        var selections = drupyter.snap.group();
+
+        //DRAG FUNCTIONS
+                //when mouse goes down over background, start drawing selection box
+                function dragstart (x, y, event) {
+                    box = drupyter.snap.rect(x, y, 0, 0).attr("stroke", "#9999FF");    
+                }
+                
+                //when mouse moves during drag, adjust box. If to left or above original point, you have to translate the whole box and invert the dx or dy values since .rect() doesn't take negative width or height
+                function dragmove (dx, dy, x, y, event) {
+                    var xoffset = 0,
+                        yoffset = 0;
+                        
+                    if (dx < 0) {
+                        xoffset = dx;
+                        dx = -1 * dx;
+                    }
+                    
+                    if (dy < 0) {
+                        yoffset = dy;
+                        dy = -1 * dy;
+                    }
+                    
+                    box.transform("T" + xoffset + "," + yoffset);
+                    box.attr("width", dx);    
+                    box.attr("height", dy);  
+                    box.attr("fill", "none");  
+                }
+                
+                
+                function dragend (event) {
+                    //get the bounds of the selections
+                    var bounds = box.getBBox();
+                    box.remove();
+                    reset();
+
+                    var items = set.selectAll("*");
+                    items.forEach(function(el) {
+                        //here, we want to get the x,y vales of each object regardless of what sort of shape it is, but rect uses rx and ry, circle uses cx and cy, etc
+                        //so we'll see if the bounding boxes intercept instead
+                        var mybounds = el.getBBox();
+                        
+                        //do bounding boxes overlap?
+                        //is one of this object's x extremes between the selection's xextremes?
+                        if (Snap.path.isBBoxIntersect(mybounds, bounds)) {
+                            selections.append(el);
+                        }
+                    });
+
+                    selections.attr("opacity", 0.5);
+                }
+
+
+        ////end added
 
         this.onSelect = function (listener) {
             listeners.push(listener)
@@ -1210,7 +1273,7 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
             if (!line) {
                 line = drupyter.snap.line(bbox.cx, bbox.cy, bbox.cx, bbox.cy).attr({
                     stroke: '#000',
-                }).addClass("drupElem connector egal-line");
+                }).addClass("drupElem connector egal-line egal-pen");
                 line.attr("data-n1", endPoint.attr("id"));
                 if (this.arrow) {
                     line.attr({"marker-end": drupyter.marker});
@@ -1457,6 +1520,67 @@ define(['jquery', './snap.svg', './text!./menu.html'], function ($, snap, menuTx
                     x2: x,
                     y2: y
                 })
+            }
+        };
+
+        this.onClickElement = function (e, element) {
+            // console.log("Selected in MakeCircle Mode");
+        };
+
+
+    }
+
+//COPY of line context called pen context
+    function MakePenContext(drupyter) {
+        var line = null;
+        var pointslist = new Array();
+        var down = false;
+        
+        this.onMouseDown = function (e, element) {
+            this.down=true;
+            if (line) {
+                line.addClass("core alignable sub egal-line");
+                var group = drupyter.snap.group(line);
+                drupyter.registerAndDecorateElement(group);
+                drupyter.saveCurrentSVG();
+                line = null;
+            } else {
+                this.pointslist = new Array();
+                var offset = $(element.node).offset();
+                var x = e.pageX - offset.left;
+                var y = e.pageY - offset.top;
+                this.pointslist.push(x,y);
+                line = drupyter.snap.polyline(this.pointslist);
+                line.attr({
+                    fill: "#fff",
+                    stroke: "#000",
+                    strokeWidth: 1,
+                    "vector-effect": "non-scaling-stroke"
+                });
+                line.addClass("core alignable sub egal-line");
+            }
+        };
+
+        this.onMouseUp = function(e,element){
+            this.down=false;
+        };
+
+        this.onMouseMove = function (e, element) {
+            if (line) {
+                if(this.down){
+                console.log("Changing ...");
+                var offset = $(element.node).offset();
+                var x = e.pageX - offset.left;
+                var y = e.pageY - offset.top;
+                this.pointslist.push(x,y);
+                line = drupyter.snap.polyline(this.pointslist);
+                line.attr({
+                    fill: "#fff",
+                    stroke: "#000",
+                    strokeWidth: 1,
+                    "vector-effect": "non-scaling-stroke"
+                });
+            }
             }
         };
 

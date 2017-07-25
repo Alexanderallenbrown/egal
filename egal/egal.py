@@ -2,6 +2,17 @@ from IPython.core.display import HTML
 
 import uuid
 
+# Jupyter Extension points
+def _jupyter_nbextension_paths():
+    return [dict(
+        section="notebook",
+        # the path is relative to the `my_fancy_module` directory
+        src="static",
+        # directory in the `nbextension/` namespace
+        dest="egal",
+        # _also_ in the `nbextension/` namespace
+        require="egal/main")]
+
 
 def edit_svg(filename, height="400"):
     svg_id = str(uuid.uuid1())
